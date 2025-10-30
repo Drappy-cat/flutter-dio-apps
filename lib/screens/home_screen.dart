@@ -335,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: GridView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 10.0, mainAxisSpacing: 10.0, childAspectRatio: 0.7),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 10.0, mainAxisSpacing: 10.0, childAspectRatio: 0.6),
           itemCount: mangaList.length,
           itemBuilder: (context, index) => _buildMangaCard(mangaList[index]),
         ),
@@ -410,6 +410,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMangaCard(Manga manga) {
+    final genreState = context.watch<GenreCubit>().state;
+    List<String> genreNames = [];
+    if (genreState is GenreLoaded) {
+      genreNames = manga.genreIds
+          .map((id) => genreState.genres.firstWhere((genre) => genre.id == id, orElse: () => Genre(id: '', name: 'Unknown')).name)
+          .toList();
+    }
+
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
@@ -422,7 +430,24 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(child: _buildCoverImage(manga.coverUrl)),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text(manga.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+              child: Column(
+                children: [
+                  Text(manga.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                  const SizedBox(height: 4),
+                  if (genreNames.isNotEmpty)
+                    Wrap(
+                      spacing: 4.0,
+                      runSpacing: 4.0,
+                      alignment: WrapAlignment.center,
+                      children: genreNames.take(3).map((name) => Chip(
+                        label: Text(name, style: const TextStyle(fontSize: 10)),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                        backgroundColor: Theme.of(context).colorScheme.secondary.withAlpha(50),
+                      )).toList(),
+                    ),
+                ],
+              ),
             ),
           ],
         ),

@@ -3,12 +3,14 @@ class Manga {
   final String title;
   final String description;
   final String coverUrl;
+  final List<String> genreIds;
 
   Manga({
     required this.id,
     required this.title,
     required this.description,
     required this.coverUrl,
+    required this.genreIds,
   });
 
   factory Manga.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,13 @@ class Manga {
     String description = 'No description available.';
     if (json['attributes']?['description'] is Map) {
       description = json['attributes']['description']['en'] ?? description;
+    }
+
+    List<String> genreIds = [];
+    if (json['attributes']?['tags'] is List) {
+      genreIds = (json['attributes']['tags'] as List)
+          .map((tag) => tag['id'] as String)
+          .toList();
     }
 
     String coverFileName = '';
@@ -44,6 +53,7 @@ class Manga {
       title: title,
       description: description,
       coverUrl: coverUrl,
+      genreIds: genreIds,
     );
   }
 }
