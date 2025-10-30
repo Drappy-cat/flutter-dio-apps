@@ -95,7 +95,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: Text('Filter Berdasarkan Genre', style: Theme.of(context).textTheme.titleLarge),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Filter Berdasarkan Genre', style: Theme.of(context).textTheme.titleLarge),
+                        TextButton(
+                          onPressed: () {
+                            setModalState(() {
+                              tempSelectedGenreIDs.clear();
+                            });
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ],
+                    ),
                   ),
                   const Divider(height: 1),
                   Expanded(
@@ -108,34 +121,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         } else if (genreState is GenreLoaded) {
                           final allGenres = genreState.genres;
                           return ListView(
-                            children: [
-                              CheckboxListTile(
-                                title: const Text('Semua Genre'),
-                                value: tempSelectedGenreIDs.isEmpty,
+                            children: allGenres.map((genre) {
+                              return CheckboxListTile(
+                                title: Text(genre.name),
+                                value: tempSelectedGenreIDs.contains(genre.id),
                                 onChanged: (bool? value) {
-                                  if (value == true) {
-                                    setModalState(() {
-                                      tempSelectedGenreIDs.clear();
-                                    });
-                                  }
+                                  setModalState(() {
+                                    if (value == true) {
+                                      tempSelectedGenreIDs.add(genre.id);
+                                    } else {
+                                      tempSelectedGenreIDs.remove(genre.id);
+                                    }
+                                  });
                                 },
-                              ),
-                              ...allGenres.map((genre) {
-                                return CheckboxListTile(
-                                  title: Text(genre.name),
-                                  value: tempSelectedGenreIDs.contains(genre.id),
-                                  onChanged: (bool? value) {
-                                    setModalState(() {
-                                      if (value == true) {
-                                        tempSelectedGenreIDs.add(genre.id);
-                                      } else {
-                                        tempSelectedGenreIDs.remove(genre.id);
-                                      }
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ],
+                              );
+                            }).toList(),
                           );
                         }
                         return const SizedBox.shrink(); // Should not happen
