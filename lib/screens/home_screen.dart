@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../models/manga_model.dart';
 import '../models/genre_model.dart';
 import 'detail_screen.dart';
@@ -329,17 +330,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMangaGrid(List<Manga> mangaList) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1000.0),
-        child: GridView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 10.0, mainAxisSpacing: 10.0, childAspectRatio: 0.6),
-          itemCount: mangaList.length,
-          itemBuilder: (context, index) => _buildMangaCard(mangaList[index]),
-        ),
-      ),
+    return MasonryGridView.count(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
+      crossAxisCount: 2,
+      itemCount: mangaList.length,
+      itemBuilder: (BuildContext context, int index) => _buildMangaCard(mangaList[index]),
+      mainAxisSpacing: 10.0,
+      crossAxisSpacing: 10.0,
     );
   }
 
@@ -415,38 +413,56 @@ class _HomeScreenState extends State<HomeScreen> {
     if (genreState is GenreLoaded) {
       genreNames = manga.genreIds
           .map((id) => genreState.genres.firstWhere((genre) => genre.id == id, orElse: () => Genre(id: '', name: 'Unknown')).name)
+          .take(3) // Limit to 3 genres for cleaner look
           .toList();
     }
 
     return Card(
-      elevation: 5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DetailScreen(manga: manga))),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
           children: [
-            Expanded(child: _buildCoverImage(manga.coverUrl)),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Text(manga.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
-                  const SizedBox(height: 4),
-                  if (genreNames.isNotEmpty)
-                    Wrap(
-                      spacing: 4.0,
-                      runSpacing: 4.0,
-                      alignment: WrapAlignment.center,
-                      children: genreNames.take(3).map((name) => Chip(
-                        label: Text(name, style: const TextStyle(fontSize: 10)),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                        backgroundColor: Theme.of(context).colorScheme.secondary.withAlpha(50),
-                      )).toList(),
+            _buildCoverImage(manga.coverUrl),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(8, 30, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      manga.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white, shadows: [Shadow(blurRadius: 2, color: Colors.black87)]),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                ],
+                    const SizedBox(height: 4),
+                    if (genreNames.isNotEmpty)
+                      Wrap(
+                        spacing: 4.0,
+                        runSpacing: 2.0,
+                        children: genreNames.map((name) => Chip(
+                          label: Text(name, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                          backgroundColor: Colors.black.withOpacity(0.3),
+                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        )).toList(),
+                      ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -456,12 +472,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCoverImage(String coverUrl) {
-    return coverUrl.isNotEmpty
-        ? Image.network(coverUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder())
-        : _buildImagePlaceholder();
+    return AspectRatio(
+      aspectRatio: 2 / 3, // Common manga cover aspect ratio
+      child: coverUrl.isNotEmpty
+          ? Image.network(coverUrl, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => _buildImagePlaceholder())
+          : _buildImagePlaceholder(),
+    );
   }
 
   Widget _buildImagePlaceholder() {
-    return Container(color: Colors.grey[300], child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey, size: 40)));
+    return Container(
+      color: Colors.grey[300],
+      child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey, size: 50)),
+    );
   }
 }
