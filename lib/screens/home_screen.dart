@@ -26,13 +26,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen for genre loading to trigger initial manga fetch
     // If genres are already loaded (e.g., hot restart), fetch manga immediately
     final genreState = context.read<GenreCubit>().state;
-    if (genreState is GenreLoaded) {
+    if (genreState is GenreLoaded && _selectedGenreIDs.isEmpty) {
+      // If genres are loaded but no selection has been made, select the first one.
+      final firstGenre = genreState.genres.first.id;
+      setState(() {
+        _selectedGenreIDs.add(firstGenre);
+      });
       _fetchManga();
-    } else if (genreState is GenreInitial) {
-      // If initial, wait for genres to load via listener
     }
   }
 
@@ -203,7 +205,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return BlocListener<GenreCubit, GenreState>(
       listener: (context, genreState) {
         if (genreState is GenreLoaded && context.read<MangaCubit>().state is MangaInitial) {
-          _fetchManga(); // Initial fetch after genres are loaded
+          // Genres just loaded, and no manga has been fetched yet.
+          // Automatically select the first genre and fetch manga.
+          if (genreState.genres.isNotEmpty && _selectedGenreIDs.isEmpty) {
+            final firstGenreId = genreState.genres.first.id;
+            setState(() {
+              _selectedGenreIDs.add(firstGenreId);
+            });
+            _fetchManga();
+          }
         }
       },
       child: Scaffold(
@@ -330,10 +340,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMangaGrid(List<Manga> mangaList) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final int crossAxisCount = (screenWidth / 180).floor().clamp(2, 5);
+
     return MasonryGridView.count(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
-      crossAxisCount: 2,
+      crossAxisCount: crossAxisCount,
       itemCount: mangaList.length,
       itemBuilder: (BuildContext context, int index) => _buildMangaCard(mangaList[index]),
       mainAxisSpacing: 10.0,
