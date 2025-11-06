@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 import '../models/manga_model.dart';
 import '../models/genre_model.dart';
 import 'detail_screen.dart';
@@ -348,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
       crossAxisCount: crossAxisCount,
       itemCount: mangaList.length,
-      itemBuilder: (BuildContext context, int index) => _buildMangaCard(mangaList[index]),
+      itemBuilder: (BuildContext context, int index) => InteractiveMangaCard(manga: mangaList[index]),
       mainAxisSpacing: 10.0,
       crossAxisSpacing: 10.0,
     );
@@ -419,66 +420,89 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Text('...', style: TextStyle(fontWeight: FontWeight.bold)),
     );
   }
+}
 
-  Widget _buildMangaCard(Manga manga) {
+class InteractiveMangaCard extends StatefulWidget {
+  final Manga manga;
+
+  const InteractiveMangaCard({required this.manga, super.key});
+
+  @override
+  State<InteractiveMangaCard> createState() => _InteractiveMangaCardState();
+}
+
+class _InteractiveMangaCardState extends State<InteractiveMangaCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
     final genreState = context.watch<GenreCubit>().state;
     List<String> genreNames = [];
     if (genreState is GenreLoaded) {
-      genreNames = manga.genreIds
+      genreNames = widget.manga.genreIds
           .map((id) => genreState.genres.firstWhere((genre) => genre.id == id, orElse: () => Genre(id: '', name: 'Unknown')).name)
           .take(3) // Limit to 3 genres for cleaner look
           .toList();
     }
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DetailScreen(manga: manga))),
-        child: Stack(
-          children: [
-            _buildCoverImage(manga.coverUrl),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.black.withOpacity(0.8), Colors.transparent],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.05 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        child: Card(
+          elevation: _isHovered ? 8 : 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => context.go('/manga/${widget.manga.id}', extra: widget.manga),
+            child: Stack(
+              children: [
+                _buildCoverImage(widget.manga.coverUrl),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(8, 30, 8, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.manga.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white, shadows: [Shadow(blurRadius: 2, color: Colors.black87)]),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        if (genreNames.isNotEmpty)
+                          Wrap(
+                            spacing: 4.0,
+                            runSpacing: 2.0,
+                            children: genreNames.map((name) => Chip(
+                              label: Text(name, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                              backgroundColor: Colors.black.withOpacity(0.3),
+                              side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                            )).toList(),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                padding: const EdgeInsets.fromLTRB(8, 30, 8, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      manga.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white, shadows: [Shadow(blurRadius: 2, color: Colors.black87)]),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    if (genreNames.isNotEmpty)
-                      Wrap(
-                        spacing: 4.0,
-                        runSpacing: 2.0,
-                        children: genreNames.map((name) => Chip(
-                          label: Text(name, style: const TextStyle(fontSize: 10, color: Colors.white70)),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                          backgroundColor: Colors.black.withOpacity(0.3),
-                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
-                        )).toList(),
-                      ),
-                  ],
-                ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

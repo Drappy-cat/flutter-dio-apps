@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'screens/home_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'router.dart';
 import 'services/api_service.dart';
 import 'bloc/genre_cubit.dart';
 import 'bloc/manga_cubit.dart';
@@ -25,7 +26,8 @@ class MyApp extends StatelessWidget {
           create: (context) => MangaCubit(apiService),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
+        routerConfig: router,
         title: 'Manga Reader',
         theme: ThemeData(
           primaryColor: const Color(0xFF5D4037),
@@ -53,7 +55,6 @@ class MyApp extends StatelessWidget {
           fontFamily: 'Roboto',
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: const HomeScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );
