@@ -457,7 +457,10 @@ class _InteractiveMangaCardState extends State<InteractiveMangaCard> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () => context.go('/manga/${widget.manga.id}', extra: widget.manga),
+            onTap: () {
+              final encodedTitle = Uri.encodeComponent(widget.manga.title.replaceAll(' ', '-').toLowerCase());
+              context.go('/manga/$encodedTitle', extra: widget.manga);
+            },
             child: Stack(
               children: [
                 _buildCoverImage(widget.manga.coverUrl),

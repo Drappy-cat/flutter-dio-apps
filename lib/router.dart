@@ -13,8 +13,10 @@ final GoRouter router = GoRouter(
       },
       routes: <RouteBase>[
         GoRoute(
-          path: 'manga/:id',
+          path: 'manga/:title', // Changed from :id to :title
           builder: (BuildContext context, GoRouterState state) {
+            // The manga object is passed as an extra parameter.
+            // The title in the URL is for user-friendly deep linking.
             final Manga manga = state.extra as Manga;
             return DetailScreen(manga: manga);
           },
